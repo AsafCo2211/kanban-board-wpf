@@ -1,131 +1,121 @@
-# Kanban Board – .NET 6 WPF (MVVM, SQLite)
+# Kanban Board — WPF + layered C# backend
 
-A desktop Kanban board application implementing a full, layered Software Engineering stack:
-a WPF (MVVM) client, a C# backend with clear separation of concerns (Business, Service, and Data‑Access layers),
-SQLite persistence, logging, and automated tests (NUnit).
+A desktop Kanban board in C# / .NET 8: a WPF client on top of a backend split into **service, business and data-access layers**, persisted in SQLite and covered by 61 NUnit tests.
 
-> **Context:** Built as part of the **Introduction to Software Engineering** course at **Ben‑Gurion University**.
+[![CI](https://github.com/AsafCo2211/kanban-board-wpf/actions/workflows/ci.yml/badge.svg)](https://github.com/AsafCo2211/kanban-board-wpf/actions/workflows/ci.yml)
+![.NET](https://img.shields.io/badge/.NET-8-512BD4)
+![Tests](https://img.shields.io/badge/tests-61%20passing-brightgreen)
+
+Built for the *Introduction to Software Engineering* course at Ben-Gurion University.
+
+<p align="center">
+  <img src="docs/screenshots/board.png" alt="Board view: backlog, in progress and done columns with task cards showing assignee, due date and creation time" width="430">
+  &nbsp;
+  <img src="docs/screenshots/boards.png" alt="Board list for the logged-in user with View and Delete actions and a Create Board button" width="430">
+</p>
+
+The screenshots are taken automatically from the real app: a [GitHub Actions workflow](.github/workflows/screenshots.yml) seeds a demo database through the backend's own services, then drives the WPF client with Windows UI Automation — logging in through the login form and opening the board ([`tools/capture-screenshots.ps1`](tools/capture-screenshots.ps1)).
 
 ---
-## ✨ Features
-- **User management:** register, login, logout.
-- **Boards & membership:** create/delete boards, owner transfer, join/leave board, list a user's boards.
-- **Columns:** three standard stages (Backlog → In Progress → Done) with **WIP limits** per column.
-- **Tasks:** create, edit (title/description/due date), assign/unassign, move (update state), delete.
-- **Persistence:** SQLite database created on first run (or uses `kanban.db` if present).
-- **Logging:** `log4net` to console and rolling file (`main.log`).
-- **Error handling:** service methods return JSON `Response<T>` objects with `ErrorMessage` and `ReturnValue`.
-- **Tests:** NUnit test project covering user/board/task flows.
 
----
-## 🧱 Architecture
-- **Frontend:** WPF client following **MVVM** (Views, ViewModels, Models).
-- **Backend:** C# class library with three layers:
-  - **Business Layer** — core entities and domain logic (`UserBL`, `BoardBL`, `TaskBL`, `ColumnBL`, `AuthenticationFacade`).
-  - **Service Layer** — thin JSON façade (`UserService`, `BoardService`, `TaskService`, `Response<T>`, `ServiceFactory`).
-  - **Data Access Layer** — SQLite controllers and DTOs (`User/Board/Task/Column/Collaborators`).
-- **Persistence:** SQLite (file `kanban.db`, created on first run if missing).
-- **Logging:** `log4net` to console and rolling file (`main.log`).
+## What it does
 
-**Service Layer (selected methods):**
-- `UserService`: `Register`, `Login`, `Logout`, `LoadAllUserData`, `DeleteAllUsers`
-- `BoardService`: `CreateBoard`, `DeleteBoard`, `ChangeBoardOwner`, `JoinBoard`, `LeaveBoard`, `GetUserBoards`, `GetBoard`, `GetColumn`, `LimitNumOfTasks`, `ListInProgTasks`
-- `TaskService`: `CreateTask`, `EditTitle`, `EditDesc`, `EditDue_Date`, `AssignTask`, `UpdateState`, `DeleteTask`
+**The backend** implements the full domain, exposed through a JSON service layer:
 
-All service methods return JSON of the form:
-```json
-{ "returnValue": <T or null>, "errorMessage": "…" | null }
+- **Users** — register, log in, log out; email and password validation.
+- **Boards** — create, delete, list; members can join and leave; ownership can be transferred.
+- **Columns** — backlog → in progress → done, each with an optional limit on the number of tasks.
+- **Tasks** — create, edit title / description / due date, assign to a member, advance to the next column, delete. Once a task is assigned, only its assignee may advance or edit it.
+
+**The WPF client** covers part of that: logging in and registering, listing your boards, creating and deleting boards, and viewing a board's columns and tasks. Task operations are available through the backend services (and are exercised by the tests) but have no UI yet.
+
+## Architecture
+
+```mermaid
+flowchart TD
+    UI["Frontend (WPF)<br/>Views · ViewModels · Models"] -->|ServiceController| S
+    T["BackendTests (NUnit)"] --> S
+    subgraph Backend
+        S["Service layer<br/>UserService · BoardService · TaskService<br/>returns JSON Response&lt;T&gt;"] --> B
+        B["Business layer<br/>UserBL · BoardBL · ColumnBL · TaskBL<br/>facades + authentication"] --> D
+        D["Data access layer<br/>one controller per table + DTOs"]
+    end
+    D --> DB[("SQLite<br/>kanban.db")]
 ```
 
----
-## 🛠 Tech Stack
-- **Language:** C# 10 / .NET 6
-- **Frontend:** WPF (`net6.0-windows`) with MVVM (View, ViewModel, Model)
-- **Backend:** .NET class library with Business Layer, Service Layer (`UserService`, `BoardService`, `TaskService`)
-- **Data:** SQLite via `System.Data.SQLite` with DTOs and controllers
-- **Logging:** `log4net`
-- **Testing:** `NUnit`, `NUnit3TestAdapter`, `Microsoft.NET.Test.Sdk`
+- **Service layer** — the only API the client sees. Every method returns JSON in the form `{ "ErrorMessage": …, "ReturnValue": … }`, so no exception crosses into the UI.
+- **Business layer** — the rules: who may do what, column limits, task state transitions. `AuthenticationFacade` tracks logged-in users.
+- **Data access layer** — a controller per table (`Users`, `Boards`, `Columns`, `Tasks`, `Collaborators`) and a DTO per entity. Business objects write through their DTO, so a change in memory and its database row stay in step.
+- **Client** — WPF views bound to view-models and models; `ServiceController` is the single bridge to the backend.
+
+## A bug the screenshots exposed
+
+The first automated screenshot showed every task in *in progress* and *done* with **no assignee**, although the demo data assigned every task before moving it.
+
+Moving a task deleted it from its column and inserted a *new* task object in the next one, copying only the title, description and due date. So every move:
+
+- **dropped the assignee** — and with it the rule that only the assignee may move a task: once moved, any member could move it again;
+- **reset the creation time** to the moment of the move.
+
+The fix moves the existing task object between columns, so its database row is updated in place ([`BoardBL.UpdateTask`](Backend/BusinessLayer/BoardBL.cs)). Two regression tests cover it — one in memory, one after reloading everything from the database — and both were confirmed to fail before the fix.
 
 ---
-## 🚀 Getting Started
 
-### Prerequisites
-- **.NET 6 SDK** (6.x)
-- **Windows 10/11** to run the WPF client (the backend and tests are cross‑platform)
+## Run it
 
-### Build & Run (CLI)
+**Requirements:** Windows 10/11 and the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0).
+
 ```bash
-git clone <repo-url>
-cd <repo-folder>
-dotnet --version    # should be 6.x
-
-# 1) Restore & build the whole solution
-dotnet restore
+git clone https://github.com/AsafCo2211/kanban-board-wpf.git
+cd kanban-board-wpf
 dotnet build Kanban.sln -c Release
-
-# 2) Run the WPF client (Windows 10/11 only)
-dotnet run --project Frontend --configuration Release
+dotnet run --project Frontend -c Release
 ```
 
-### Build & Run (Visual Studio)
-1. Open **Kanban.sln** in Visual Studio 2022 (Windows).
-2. Right‑click **Frontend** → *Set as Startup Project*.
-3. Build (**Ctrl+Shift+B**) and run (**F5**).
+Register a user from the login screen, or start with demo data (PowerShell):
 
-### Run Tests
+```powershell
+cd Frontend/bin/Release/net8.0-windows
+dotnet ../../../../tools/DemoSeed/bin/Release/net8.0/DemoSeed.dll   # creates kanban.db here
+.\IntroSE.Kanban.Frontend.exe                                         # log in: dana@kanban.dev / Demo1234
+```
+
+The app reads and writes `kanban.db` in its **working directory**, creating the tables on first run. Delete the file to start fresh.
+
+Passwords must be 6–20 characters with an uppercase letter, a lowercase letter and a digit.
+
+## Tests
+
 ```bash
-# From the repository root
 dotnet test BackendTests -c Release
 ```
 
-### Database
-- The app looks for `kanban.db` in the **current working directory**.
-- If the file does not exist, it will be created automatically and all tables will be created (`CREATE TABLE IF NOT EXISTS`).
-- To start fresh, **close the app** and delete the `kanban.db` next to the executable (e.g., `Frontend/bin/Release/net6.0-windows/kanban.db`).
+61 NUnit tests through the public services: registration and login rules, board creation and membership, column limits, task editing, assignment and permissions, task moves, and persistence across a reload. GitHub Actions runs them on Windows on every push.
 
----
-## 📁 Project Structure
+`BackendTests` also contains `MainTestRunner`, an earlier console-based scenario runner.
+
+## Project structure
+
 ```
 Kanban.sln
-├─ Backend/                          # Class library (business, service, data access)
-│  ├─ BuisnessLayer/                 # Domain entities & facades (UserBL, BoardBL, TaskBL, ColumnBL, AuthenticationFacade, …)
-│  ├─ ServiceLayer/                  # JSON-facing services (UserService, BoardService, TaskService, Response<T>, ServiceFactory)
-│  └─ DataAccessLayer/               # SQLite DTOs & controllers (User/Board/Task/Column/Collaborators)
-│     ├─ Controllers/
-│     └─ DTOs/
-├─ Frontend/                         # WPF client (MVVM)
-│  ├─ View/                          # XAML windows (Login, Board list, Board details, New board/task dialogs, …)
-│  ├─ ViewModel/                     # VM classes (MainWindowVM, BoardViewModel, BoardDetailVM, …)
-│  └─ Model/                         # Client-side models + ServiceController bridge to backend
-├─ BackendTests/                     # NUnit tests; references Backend
-│  └─ BackendTests.csproj
-├─ documents/
-│  └─ design.pdf                     # Design document (course context)
-├─ kanban.db                         # SQLite database (optional – created on first run if missing)
-├─ Backend/log4net.config            # Logging configuration (console + rolling file)
-└─ README.md
+├── Backend/
+│   ├── ServiceLayer/        JSON services, Response<T>, ServiceFactory
+│   ├── BusinessLayer/       domain objects, facades, authentication
+│   └── DataAccessLayer/     Controllers/ (one per table) and DTOs/
+├── Frontend/                WPF client: View/, ViewModel/, Model/
+├── BackendTests/            NUnit tests
+├── tools/
+│   ├── DemoSeed/            builds a demo kanban.db through the services
+│   └── capture-screenshots.ps1
+├── docs/
+│   ├── design.pdf           design document
+│   └── screenshots/
+└── .github/workflows/       CI (build + tests) and screenshots
 ```
 
----
-## 📌 What this project demonstrates
-- **Full-stack architecture:** layered C# solution with clear separation of concerns.
-- **Desktop UI engineering:** WPF + MVVM with data binding and commands.
-- **Relational persistence:** schema design & CRUD via SQLite and DTO controllers.
-- **API design:** JSON service layer that decouples UI from domain logic.
-- **Testing culture:** NUnit tests for core flows.
-- **Operational maturity:** structured logging (log4net), defensive validations, and error propagation.
+## Limitations
 
----
-## ⚠️ Notes & Limitations
-- The WPF client targets Windows (`net6.0-windows`). On macOS/Linux you can build the backend and run the tests, but the GUI requires Windows.
-
-## ▶️ Quick Start (UI)
-- 1. **Launch the app** (see Build & Run).
-- 2. **Register** with an email & password.
-- 3. **Login** and you will see your boards list.
-- 4. **Create a board**, then open it to see the three columns.
-- 5. **Add tasks** (title, description, due date).
-- 6. **Drag/move** tasks between columns using the provided actions; assign tasks to members.
-- 7. **Adjust WIP limits** per column if needed.
-
----
+- **Passwords are stored in plain text** in SQLite. A real system would store a salted hash (bcrypt, Argon2).
+- **The UI is partial** — task operations exist only in the backend, as described above.
+- **Windows only** for the client (WPF).
+- **One shared database file per working directory**; there is no multi-user server.
