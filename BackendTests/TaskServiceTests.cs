@@ -38,6 +38,47 @@ namespace BackendTests
 
         /* ---------- positive paths ---------- */
 
+        private TaskSL ReadTask(ServiceFactory factory, int column)
+        {
+            var json = factory.Bs.GetColumn(Email, BoardName, column);
+            return JsonSerializer.Deserialize<Response<List<TaskSL>>>(json)
+                       .ReturnValue.Single(t => t.Id == _taskId);
+        }
+
+        [Test]
+        public void AdvanceTask_KeepsAssigneeAndCreationTime()
+        {
+            // Regression: moving a task used to rebuild it, dropping the
+            // assignee and resetting the creation time.
+            _ts.AssignTask(Email, BoardName, 0, (int)_taskId, Email);
+            var before = ReadTask(_factory, 0);
+
+            _ts.UpdateState(Email, BoardName, 0, (int)_taskId);
+            var after = ReadTask(_factory, 1);
+
+            Assert.That(after.Assignee, Is.EqualTo(Email));
+            Assert.That(after.CreationTime, Is.EqualTo(before.CreationTime));
+            Assert.That(after.Title, Is.EqualTo(before.Title));
+        }
+
+        [Test]
+        public void AdvanceTask_PersistsAssigneeAndCreationTime()
+        {
+            _ts.AssignTask(Email, BoardName, 0, (int)_taskId, Email);
+            var before = ReadTask(_factory, 0);
+            _ts.UpdateState(Email, BoardName, 0, (int)_taskId);
+            _ts.UpdateState(Email, BoardName, 1, (int)_taskId);
+
+            // Fresh services, state loaded back from the database.
+            var reloaded = new ServiceFactory();
+            reloaded.LoadAllData();
+            reloaded.Us.Login(Email, Password);
+            var after = ReadTask(reloaded, 2);
+
+            Assert.That(after.Assignee, Is.EqualTo(Email));
+            Assert.That(after.CreationTime, Is.EqualTo(before.CreationTime).Within(TimeSpan.FromMilliseconds(1)));
+        }
+
         [Test]
         public void UpdateState_Good()
         {

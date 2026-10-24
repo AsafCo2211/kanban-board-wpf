@@ -104,6 +104,20 @@ namespace IntroSE.Kanban.Backend.BusinessLayer
         /// </summary>
         /// <param name="taskId"></param>
         /// <returns></returns>
+        /// <summary>
+        /// Removes a task from this column in memory only — its database row is
+        /// kept. Used when moving a task to another column.
+        /// </summary>
+        public TaskBL Detach(long taskId)
+        {
+            if (!tasks.Remove(taskId, out TaskBL task))
+            {
+                Log.Error($"Task {taskId} not found in column {Type} for board {boardID}.");
+                throw new Exception("Task not found in this column.");
+            }
+            return task;
+        }
+
         public bool DeleteTask(long boardID, long taskId)
         {
             if (!tasks.ContainsKey(taskId))

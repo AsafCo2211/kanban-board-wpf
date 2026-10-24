@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
@@ -203,10 +203,12 @@ namespace Backend.BusinessLayer
             if (!columns[nextColumn].CanAddTask())
                 throw new Exception($"Cannot move task: column {nextColumn} is full");
 
-            columns[currentColumn].DeleteTask(this.boardID, task.TaskID);
-            TaskBL updatedTask = new TaskBL(this.boardID, task.TaskID, task.Title, task.Description, task.Due_date, taskController);
-            columns[nextColumn].AddTask(updatedTask); // Move the actual task object
-            updatedTask.Type = nextColumn; // Update the task type to the new column
+            // Move the existing task object rather than rebuilding it, so it
+            // keeps its assignee and creation time; setting Type updates the
+            // task's database row in place.
+            TaskBL moving = columns[currentColumn].Detach(task.TaskID);
+            columns[nextColumn].AddTask(moving);
+            moving.Type = nextColumn;
 
             Log.Info($"Moved task {task.TaskID} from {currentColumn} to {nextColumn}");
             return true;
