@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Backend.BuisnessLayer;
+using Backend.BusinessLayer;
 using Backend.ServiceLayer;
-using IntroSE.Kanban.Backend.BuisnessLayer;
+using IntroSE.Kanban.Backend.BusinessLayer;
 
 namespace IntroSE.Kanban.Backend.ServiceLayer
 {

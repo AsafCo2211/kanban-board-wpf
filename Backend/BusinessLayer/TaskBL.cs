@@ -10,7 +10,7 @@ using IntroSE.Kanban.Backend.DataAccessLayer.Controllers;
 using IntroSE.Kanban.Backend.DataAccessLayer.DTOs;
 using log4net;
 
-namespace Backend.BuisnessLayer
+namespace Backend.BusinessLayer
 {   internal class TaskBL
     {
         private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);

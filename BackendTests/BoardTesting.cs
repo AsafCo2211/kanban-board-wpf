@@ -1,4 +1,4 @@
-﻿using Backend.BuisnessLayer;
+﻿using Backend.BusinessLayer;
 using Backend.ServiceLayer;
 using IntroSE.Kanban.Backend.ServiceLayer;
 using System;

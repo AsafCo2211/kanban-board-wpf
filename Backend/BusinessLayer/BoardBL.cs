@@ -5,13 +5,13 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using IntroSE.Kanban.Backend.BuisnessLayer;
+using IntroSE.Kanban.Backend.BusinessLayer;
 using IntroSE.Kanban.Backend.DataAccessLayer.Controllers;
 using IntroSE.Kanban.Backend.DataAccessLayer.DTOs;
 using IntroSE.Kanban.Backend.ServiceLayer;
 using log4net;
 
-namespace Backend.BuisnessLayer
+namespace Backend.BusinessLayer
 {
     internal class BoardBL
     {

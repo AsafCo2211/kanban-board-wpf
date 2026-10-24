@@ -9,7 +9,7 @@ using IntroSE.Kanban.Backend.DataAccessLayer.Controllers;
 using IntroSE.Kanban.Backend.DataAccessLayer.DTOs;
 using log4net;
 
-namespace IntroSE.Kanban.Backend.BuisnessLayer
+namespace IntroSE.Kanban.Backend.BusinessLayer
 {
     internal class Collaborators
     {

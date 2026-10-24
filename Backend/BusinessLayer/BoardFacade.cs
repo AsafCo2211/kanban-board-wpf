@@ -1,5 +1,5 @@
 using Backend.ServiceLayer;
-using IntroSE.Kanban.Backend.BuisnessLayer;
+using IntroSE.Kanban.Backend.BusinessLayer;
 using IntroSE.Kanban.Backend.DataAccessLayer.Controllers;
 using IntroSE.Kanban.Backend.DataAccessLayer.DTOs;
 using IntroSE.Kanban.Backend.ServiceLayer;
@@ -13,7 +13,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 
-namespace Backend.BuisnessLayer
+namespace Backend.BusinessLayer
 {
     internal class BoardFacade
     {

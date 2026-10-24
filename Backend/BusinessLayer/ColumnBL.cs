@@ -5,13 +5,13 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using Backend.BuisnessLayer;
+using Backend.BusinessLayer;
 using Backend.ServiceLayer;
 using IntroSE.Kanban.Backend.DataAccessLayer.Controllers;
 using IntroSE.Kanban.Backend.DataAccessLayer.DTOs;
 using log4net;
 
-namespace IntroSE.Kanban.Backend.BuisnessLayer
+namespace IntroSE.Kanban.Backend.BusinessLayer
 {
     internal class ColumnBL
     {

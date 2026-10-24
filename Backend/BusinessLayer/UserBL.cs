@@ -12,7 +12,7 @@ using IntroSE.Kanban.Backend.DataAccessLayer.Controllers;
 
 [assembly:InternalsVisibleTo("Backend.ServiceLayer")]
 
-namespace Backend.BuisnessLayer
+namespace Backend.BusinessLayer
 {
     internal class UserBL
     {

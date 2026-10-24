@@ -1,4 +1,4 @@
-using Backend.BuisnessLayer;
+using Backend.BusinessLayer;
 using IntroSE.Kanban.Backend.DataAccessLayer.DTOs;
 using log4net;
 using System;

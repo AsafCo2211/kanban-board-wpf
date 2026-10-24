@@ -4,8 +4,8 @@ using System.Data.Common;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Backend.BuisnessLayer;
-using IntroSE.Kanban.Backend.BuisnessLayer;
+using Backend.BusinessLayer;
+using IntroSE.Kanban.Backend.BusinessLayer;
 using IntroSE.Kanban.Backend.ServiceLayer;
 
 namespace Backend.ServiceLayer
