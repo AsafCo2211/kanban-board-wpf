@@ -1,0 +1,42 @@
+# Regenerates the README screenshots from the real app: seeds a demo
+# database through the backend services, then drives the WPF client with
+# Windows UI Automation (tools/capture-screenshots.ps1).
+#
+# Run manually from the Actions tab; download the "screenshots" artifact
+# and copy the PNGs into docs/screenshots/.
+
+name: Screenshots
+
+on:
+  workflow_dispatch:
+
+jobs:
+  screenshots:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Build
+        run: dotnet build Kanban.sln -c Release
+
+      - name: Seed demo database
+        working-directory: Frontend/bin/Release/net8.0-windows
+        run: dotnet ../../../../tools/DemoSeed/bin/Release/net8.0/DemoSeed.dll
+
+      - name: Set screen resolution
+        shell: powershell
+        run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
+
+      - name: Capture screenshots
+        shell: powershell
+        run: tools/capture-screenshots.ps1 -AppDir Frontend/bin/Release/net8.0-windows -OutDir screenshots
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: screenshots/
